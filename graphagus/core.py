@@ -1,6 +1,7 @@
 from BTrees.IOBTree import IOBTree
 from BTrees.OIBTree import OIBTree
 from BTrees.IIBTree import IIBTree
+import BTrees
 from persistent import Persistent
 from persistent.mapping import PersistentMapping
 from BTrees.Length import Length
@@ -399,14 +400,16 @@ class GraphDB(Persistent):
 
         self._init()
     
-    def render(self,filename='graphagus',source=False):
+    def render(self,filename='graphagus',label='name',source=False):
         from graphviz import Digraph
         
         dot = Digraph('Graphagus dump',format='svg')
-        
         for k in self.nodes.keys():
             n = self.lightNode(k)
-            dot.node(str(k),n['name'])
+            if label in n:
+                dot.node(str(k),n[label])    
+            else:
+                dot.node(str(k),label)
         
         for k in self.edges.keys():
             e = self.lightEdge(k)
@@ -429,16 +432,18 @@ class GraphDB(Persistent):
         return Node(self,lightNode)
 
 def getGraph(filename=None,graphname='graphdb',storage=None,graphonly=True):
-    
+    print("Graphagus from AntonCom is here..")
     if filename:
         storage = FileStorage(filename)
     
     db = DB(storage)
     connection = db.open()
-    root = connection.root()
-    if not root.has_key(graphname):
-        root[graphname]=GraphDB()
-    g = root[graphname]
+    root = connection.root
+    root.btrees = BTrees.OOBTree.BTree()
+
+    if not root.btrees.has_key(graphname):
+        root.btrees[graphname]=GraphDB()
+    g = root.btrees[graphname]
     g._v_root = root
     g._v_connection = connection
     g._v_db = db
